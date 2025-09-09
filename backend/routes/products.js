@@ -1,8 +1,21 @@
 const express = require('express');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { upload, generateFilename } = require('../middleware/upload');
+const { processImageBuffer } = require('../middleware/imageProcessor');
+const path = require('path');
 const router = express.Router();
+
+// Test endpoint for file upload (remove in production)
+router.post('/test-upload', upload.single('image'), (req, res) => {
+  console.log('Test upload - Request body:', req.body);
+  console.log('Test upload - Request file:', req.file);
+  res.json({ 
+    message: 'Upload test successful', 
+    file: req.file,
+    body: req.body 
+  });
+});
 
 // GET /api/products - Get all products
 router.get('/', auth, async (req, res) => {
@@ -54,8 +67,19 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // POST /api/products - Add new product
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ message: 'File upload error: ' + err.message });
+    }
+    next();
+  });
+}, auth, async (req, res) => {
   try {
+    console.log('POST Request body:', req.body);
+    console.log('POST Request file:', req.file ? 'File received' : 'No file');
+    
     const { name, productId, price, category, discount, description } = req.body;
     
     // Validation
@@ -71,6 +95,30 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'Product ID already exists' });
     }
     
+    let imageFilename = null;
+    
+    // Process image if provided
+    if (req.file) {
+      try {
+        const filename = generateFilename(req.file.originalname);
+        const outputPath = path.join('uploads', filename);
+        
+        console.log('Processing image...');
+        const success = await processImageBuffer(req.file.buffer, outputPath);
+        
+        if (success) {
+          imageFilename = filename;
+          console.log('Image processed and saved:', filename);
+        } else {
+          console.error('Failed to process image');
+          return res.status(500).json({ message: 'Failed to process image' });
+        }
+      } catch (error) {
+        console.error('Image processing error:', error);
+        return res.status(500).json({ message: 'Image processing failed' });
+      }
+    }
+    
     const product = new Product({
       name,
       productId,
@@ -78,24 +126,36 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       category,
       discount: discount ? parseFloat(discount) : 0,
       description,
-      image: req.file ? req.file.filename : null
+      image: imageFilename
     });
     
     const savedProduct = await product.save();
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error('Error creating product:', error);
+    console.error('Error stack:', error.stack);
     if (error.code === 11000) {
       res.status(400).json({ message: 'Product ID already exists' });
     } else {
-      res.status(500).json({ message: 'Error creating product' });
+      res.status(500).json({ message: 'Error creating product: ' + error.message });
     }
   }
 });
 
 // PUT /api/products/:id - Update product
-router.put('/:id', auth, upload.single('image'), async (req, res) => {
+router.put('/:id', (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ message: 'File upload error: ' + err.message });
+    }
+    next();
+  });
+}, auth, async (req, res) => {
   try {
+    console.log('PUT Request body:', req.body);
+    console.log('PUT Request file:', req.file ? 'File received' : 'No file');
+    
     const { name, productId, price, category, discount, description } = req.body;
     
     // Validation
@@ -123,9 +183,26 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
       description
     };
 
-    // Only update image if a new one is uploaded
+    // Process new image if provided
     if (req.file) {
-      updateData.image = req.file.filename;
+      try {
+        const filename = generateFilename(req.file.originalname);
+        const outputPath = path.join('uploads', filename);
+        
+        console.log('Processing image for update...');
+        const success = await processImageBuffer(req.file.buffer, outputPath);
+        
+        if (success) {
+          updateData.image = filename;
+          console.log('Image processed and saved for update:', filename);
+        } else {
+          console.error('Failed to process image for update');
+          return res.status(500).json({ message: 'Failed to process image' });
+        }
+      } catch (error) {
+        console.error('Image processing error for update:', error);
+        return res.status(500).json({ message: 'Image processing failed' });
+      }
     }
 
     const product = await Product.findByIdAndUpdate(

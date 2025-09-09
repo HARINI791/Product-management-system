@@ -66,6 +66,12 @@ function App() {
       
       if (productData.imageFile) {
         formData.append('image', productData.imageFile);
+        console.log('Image file being sent:', productData.imageFile);
+      }
+      
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
       }
       
       const response = await axios.post(`${API_BASE_URL}/products`, formData, {
