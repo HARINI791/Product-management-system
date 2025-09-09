@@ -9,6 +9,8 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
     discount: '',
     description: ''
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
 
   // Populate form when editing
@@ -22,6 +24,9 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
         discount: product.discount || '',
         description: product.description || ''
       });
+      if (product.image) {
+        setImagePreview(`http://localhost:5000/uploads/${product.image}`);
+      }
     }
   }, [product]);
 
@@ -38,6 +43,20 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
         ...prev,
         [name]: ''
       }));
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -79,7 +98,8 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
       const submitData = {
         ...formData,
         price: parseFloat(formData.price),
-        discount: formData.discount ? parseFloat(formData.discount) : 0
+        discount: formData.discount ? parseFloat(formData.discount) : 0,
+        imageFile: imageFile
       };
       onSubmit(submitData);
     }
@@ -200,6 +220,33 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
               placeholder="Enter product description"
             />
             {errors.description && <div className="error-message">{errors.description}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="image">Product Image</label>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/*"
+              className="form-control"
+              onChange={handleImageChange}
+            />
+            {imagePreview && (
+              <div className="image-preview">
+                <img src={imagePreview} alt="Preview" />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm remove-image-btn"
+                  onClick={() => {
+                    setImageFile(null);
+                    setImagePreview(null);
+                  }}
+                >
+                  Remove Image
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>

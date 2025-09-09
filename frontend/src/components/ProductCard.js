@@ -17,6 +17,18 @@ const ProductCard = ({ product, onEdit, onDelete }) => {
 
   return (
     <div className="product-card">
+      {product.image && (
+        <div className="product-image">
+          <img 
+            src={`http://localhost:5000/uploads/${product.image}`} 
+            alt={product.name}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+      
       <div className="product-header">
         <div>
           <h3 className="product-name">{product.name}</h3>

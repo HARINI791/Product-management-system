@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from './context/AuthContext';
 import ProductCard from './components/ProductCard';
 import ProductForm from './components/ProductForm';
 import ConfirmationModal from './components/ConfirmationModal';
+import Navbar from './components/Navbar';
+import AuthPage from './components/AuthPage';
 import './App.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function App() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,14 +46,34 @@ function App() {
 
   // Load products on component mount and when search/sort/category changes
   useEffect(() => {
-    fetchProducts();
-  }, [searchTerm, sortBy, categoryFilter]);
+    if (isAuthenticated) {
+      fetchProducts();
+    }
+  }, [searchTerm, sortBy, categoryFilter, isAuthenticated]);
 
   // Add new product
   const handleAddProduct = async (productData) => {
     try {
       setError(null);
-      const response = await axios.post(`${API_BASE_URL}/products`, productData);
+      
+      const formData = new FormData();
+      formData.append('name', productData.name);
+      formData.append('productId', productData.productId);
+      formData.append('price', productData.price);
+      formData.append('category', productData.category);
+      formData.append('discount', productData.discount);
+      formData.append('description', productData.description);
+      
+      if (productData.imageFile) {
+        formData.append('image', productData.imageFile);
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/products`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       setProducts([...products, response.data]);
       setShowForm(false);
       setSuccess('Product added successfully!');
@@ -64,7 +88,25 @@ function App() {
   const handleUpdateProduct = async (productData) => {
     try {
       setError(null);
-      const response = await axios.put(`${API_BASE_URL}/products/${editingProduct._id}`, productData);
+      
+      const formData = new FormData();
+      formData.append('name', productData.name);
+      formData.append('productId', productData.productId);
+      formData.append('price', productData.price);
+      formData.append('category', productData.category);
+      formData.append('discount', productData.discount);
+      formData.append('description', productData.description);
+      
+      if (productData.imageFile) {
+        formData.append('image', productData.imageFile);
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}/products/${editingProduct._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       setProducts(products.map(p => p._id === editingProduct._id ? response.data : p));
       setShowForm(false);
       setEditingProduct(null);
@@ -119,8 +161,23 @@ function App() {
     setEditingProduct(null);
   };
 
+  // Show loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="App">
+        <div className="loading">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show authentication page if not logged in
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
   return (
     <div className="App">
+      <Navbar />
       <div className="container">
         <header className="header">
           <h1>Product Management System</h1>

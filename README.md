@@ -12,6 +12,9 @@ A full-stack web application for managing products with CRUD operations, built w
 - ✅ Delete products with confirmation dialog
 - ✅ Sort products by price (ascending/descending)
 - ✅ Search products by name
+- ✅ Filter products by category
+- ✅ User Authentication (Login/Register/Logout)
+- ✅ Protected routes and user session management
 - ✅ Responsive design with modern UI
 - ✅ Form validation and error handling
 
@@ -19,6 +22,9 @@ A full-stack web application for managing products with CRUD operations, built w
 - ✅ RESTful API endpoints
 - ✅ Express.js server
 - ✅ MongoDB integration with Mongoose
+- ✅ JWT-based authentication
+- ✅ Password hashing with bcrypt
+- ✅ Protected API routes
 - ✅ Error handling middleware
 - ✅ CORS support
 
@@ -30,11 +36,22 @@ A full-stack web application for managing products with CRUD operations, built w
   - category (required)
   - discount (optional, 0-100%)
   - description (required)
+- ✅ User schema for authentication:
+  - name (required)
+  - email (required, unique)
+  - password (required, hashed)
 - ✅ Timestamps for created/updated dates
 
 ## API Endpoints
 
-- `GET /api/products` - Get all products (supports search and sort)
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user info
+- `POST /api/auth/logout` - Logout user
+
+### Products (Protected Routes)
+- `GET /api/products` - Get all products (supports search, filter, and sort)
 - `GET /api/products/:id` - Get single product
 - `POST /api/products` - Create new product
 - `PUT /api/products/:id` - Update existing product
@@ -64,6 +81,7 @@ Create a `.env` file in the backend directory:
 ```
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/productmanagement
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 ```
 
 Start the backend server:
@@ -88,11 +106,19 @@ Make sure MongoDB is running on your system. The application will automatically 
 ## Usage
 
 1. Open your browser and navigate to `http://localhost:3000`
-2. Add new products using the "Add New Product" button
-3. Search for products using the search bar
-4. Sort products by price using the dropdown
-5. Edit products by clicking the "Edit" button on any product card
-6. Delete products by clicking the "Delete" button (with confirmation)
+2. **Authentication**: 
+   - Register a new account or login with existing credentials
+   - All product management features require authentication
+3. **Product Management**:
+   - Add new products using the "Add New Product" button
+   - Search for products using the search bar
+   - Filter products by category using the category dropdown
+   - Sort products by price using the sort dropdown
+   - Edit products by clicking the "Edit" button on any product card
+   - Delete products by clicking the "Delete" button (with confirmation)
+4. **User Management**:
+   - View your profile information in the top navigation
+   - Logout using the logout button in the navigation bar
 
 ## Project Structure
 
@@ -142,6 +168,10 @@ productmanagement/
 - [x] Basic form validation
 
 ### Additional Features ✅
+- [x] User Authentication (Login/Register/Logout)
+- [x] Protected routes and API endpoints
+- [x] JWT-based session management
+- [x] Filter products by category
 - [x] Responsive design
 - [x] Modern UI with gradients and animations
 - [x] Discount calculation and display
@@ -153,6 +183,8 @@ productmanagement/
 - [x] Price formatting with currency
 - [x] Category badges
 - [x] Discount badges
+- [x] User profile display
+- [x] Secure password hashing
 
 ## Development
 

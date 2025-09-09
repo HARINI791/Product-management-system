@@ -1,9 +1,11 @@
 const express = require('express');
 const Product = require('../models/Product');
+const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const router = express.Router();
 
 // GET /api/products - Get all products
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const { search, sort, category } = req.query;
     let query = {};
@@ -38,7 +40,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/products/:id - Get single product
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -52,7 +54,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products - Add new product
-router.post('/', async (req, res) => {
+router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
     const { name, productId, price, category, discount, description } = req.body;
     
@@ -75,7 +77,8 @@ router.post('/', async (req, res) => {
       price: parseFloat(price),
       category,
       discount: discount ? parseFloat(discount) : 0,
-      description
+      description,
+      image: req.file ? req.file.filename : null
     });
     
     const savedProduct = await product.save();
@@ -91,7 +94,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/products/:id - Update product
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, upload.single('image'), async (req, res) => {
   try {
     const { name, productId, price, category, discount, description } = req.body;
     
@@ -111,16 +114,23 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Product ID already exists' });
     }
     
+    const updateData = {
+      name,
+      productId,
+      price: parseFloat(price),
+      category,
+      discount: discount ? parseFloat(discount) : 0,
+      description
+    };
+
+    // Only update image if a new one is uploaded
+    if (req.file) {
+      updateData.image = req.file.filename;
+    }
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        productId,
-        price: parseFloat(price),
-        category,
-        discount: discount ? parseFloat(discount) : 0,
-        description
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     
@@ -140,7 +150,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/products/:id - Delete product
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) {
