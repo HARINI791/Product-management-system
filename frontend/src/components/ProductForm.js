@@ -9,8 +9,8 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
     discount: '',
     description: ''
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [errors, setErrors] = useState({});
 
   // Populate form when editing
@@ -24,8 +24,10 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
         discount: product.discount || '',
         description: product.description || ''
       });
-      if (product.image) {
-        setImagePreview(`http://localhost:5000/uploads/${product.image}`);
+      if (product.images && product.images.length > 0) {
+        setImagePreviews(product.images.map(img => `http://localhost:5000/uploads/${img}`));
+      } else if (product.image) {
+        setImagePreviews([`http://localhost:5000/uploads/${product.image}`]);
       }
     }
   }, [product]);
@@ -47,17 +49,41 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
+    const newFiles = Array.from(e.target.files);
+    if (newFiles.length > 0) {
+      // Check if adding new files would exceed the limit
+      const totalFiles = imageFiles.length + newFiles.length;
+      if (totalFiles > 5) {
+        alert('You can only upload up to 5 images total. Please remove some images first.');
+        e.target.value = ''; // Clear the input
+        return;
+      }
       
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      // Combine existing files with new files
+      const combinedFiles = [...imageFiles, ...newFiles];
+      setImageFiles(combinedFiles);
+      
+      // Create preview URLs for new files only
+      const newPreviews = [];
+      let loadedCount = 0;
+      
+      newFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPreviews[index] = e.target.result;
+          loadedCount++;
+          
+          if (loadedCount === newFiles.length) {
+            // Combine existing previews with new previews
+            setImagePreviews([...imagePreviews, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    
+    // Clear the input so the same file can be selected again if needed
+    e.target.value = '';
   };
 
   const validateForm = () => {
@@ -99,7 +125,7 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
         ...formData,
         price: parseFloat(formData.price),
         discount: formData.discount ? parseFloat(formData.discount) : 0,
-        imageFile: imageFile
+        imageFiles: imageFiles
       };
       onSubmit(submitData);
     }
@@ -223,28 +249,58 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="image">Product Image</label>
+            <label htmlFor="images">Product Images (up to 5)</label>
             <input
               type="file"
-              id="image"
-              name="image"
+              id="images"
+              name="images"
               accept="image/*"
+              multiple
               className="form-control"
               onChange={handleImageChange}
             />
-            {imagePreview && (
-              <div className="image-preview">
-                <img src={imagePreview} alt="Preview" />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm remove-image-btn"
-                  onClick={() => {
-                    setImageFile(null);
-                    setImagePreview(null);
-                  }}
-                >
-                  Remove Image
-                </button>
+            <small className="form-text">
+              {imagePreviews.length === 0 
+                ? "Select one or more images to upload" 
+                : `You can add ${5 - imagePreviews.length} more image(s)`}
+            </small>
+            {imagePreviews.length > 0 && (
+              <div className="image-previews">
+                <p className="image-count">Selected {imagePreviews.length} image(s)</p>
+                <div className="preview-grid">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="image-preview-item">
+                      <img src={preview} alt={`Preview ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm remove-image-btn"
+                        onClick={() => {
+                          const newFiles = imageFiles.filter((_, i) => i !== index);
+                          const newPreviews = imagePreviews.filter((_, i) => i !== index);
+                          setImageFiles(newFiles);
+                          setImagePreviews(newPreviews);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {imagePreviews.length < 5 && (
+                  <div className="add-more-images">
+                    <label htmlFor="add-more-images" className="btn btn-outline-primary btn-sm">
+                      Add More Images
+                    </label>
+                    <input
+                      type="file"
+                      id="add-more-images"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={handleImageChange}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

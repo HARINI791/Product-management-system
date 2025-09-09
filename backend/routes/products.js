@@ -68,7 +68,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // POST /api/products - Add new product
 router.post('/', (req, res, next) => {
-  upload.single('image')(req, res, (err) => {
+  upload.array('images', 5)(req, res, (err) => { // Allow up to 5 images
     if (err) {
       console.error('Upload error:', err);
       return res.status(400).json({ message: 'File upload error: ' + err.message });
@@ -78,7 +78,7 @@ router.post('/', (req, res, next) => {
 }, auth, async (req, res) => {
   try {
     console.log('POST Request body:', req.body);
-    console.log('POST Request file:', req.file ? 'File received' : 'No file');
+    console.log('POST Request files:', req.files ? `${req.files.length} files received` : 'No files');
     
     const { name, productId, price, category, discount, description } = req.body;
     
@@ -96,22 +96,31 @@ router.post('/', (req, res, next) => {
     }
     
     let imageFilename = null;
+    let imageFilenames = [];
     
-    // Process image if provided
-    if (req.file) {
+    // Process images if provided
+    if (req.files && req.files.length > 0) {
       try {
-        const filename = generateFilename(req.file.originalname);
-        const outputPath = path.join('uploads', filename);
+        console.log(`Processing ${req.files.length} images...`);
         
-        console.log('Processing image...');
-        const success = await processImageBuffer(req.file.buffer, outputPath);
+        for (let i = 0; i < req.files.length; i++) {
+          const file = req.files[i];
+          const filename = generateFilename(file.originalname);
+          const outputPath = path.join('uploads', filename);
+          
+          const success = await processImageBuffer(file.buffer, outputPath);
+          
+          if (success) {
+            imageFilenames.push(filename);
+            if (i === 0) imageFilename = filename; // Keep first image as main image for backward compatibility
+            console.log(`Image ${i + 1} processed and saved:`, filename);
+          } else {
+            console.error(`Failed to process image ${i + 1}`);
+          }
+        }
         
-        if (success) {
-          imageFilename = filename;
-          console.log('Image processed and saved:', filename);
-        } else {
-          console.error('Failed to process image');
-          return res.status(500).json({ message: 'Failed to process image' });
+        if (imageFilenames.length === 0) {
+          return res.status(500).json({ message: 'Failed to process any images' });
         }
       } catch (error) {
         console.error('Image processing error:', error);
@@ -126,7 +135,8 @@ router.post('/', (req, res, next) => {
       category,
       discount: discount ? parseFloat(discount) : 0,
       description,
-      image: imageFilename
+      image: imageFilename, // Main image for backward compatibility
+      images: imageFilenames // Array of all images
     });
     
     const savedProduct = await product.save();
@@ -144,7 +154,7 @@ router.post('/', (req, res, next) => {
 
 // PUT /api/products/:id - Update product
 router.put('/:id', (req, res, next) => {
-  upload.single('image')(req, res, (err) => {
+  upload.array('images', 5)(req, res, (err) => { // Allow up to 5 images
     if (err) {
       console.error('Upload error:', err);
       return res.status(400).json({ message: 'File upload error: ' + err.message });
@@ -154,7 +164,7 @@ router.put('/:id', (req, res, next) => {
 }, auth, async (req, res) => {
   try {
     console.log('PUT Request body:', req.body);
-    console.log('PUT Request file:', req.file ? 'File received' : 'No file');
+    console.log('PUT Request files:', req.files ? `${req.files.length} files received` : 'No files');
     
     const { name, productId, price, category, discount, description } = req.body;
     
@@ -166,11 +176,11 @@ router.put('/:id', (req, res, next) => {
     }
     
     // Check if productId already exists (excluding current product)
-    const existingProduct = await Product.findOne({ 
+    const existingProductWithSameId = await Product.findOne({ 
       productId, 
       _id: { $ne: req.params.id } 
     });
-    if (existingProduct) {
+    if (existingProductWithSameId) {
       return res.status(400).json({ message: 'Product ID already exists' });
     }
     
@@ -183,21 +193,43 @@ router.put('/:id', (req, res, next) => {
       description
     };
 
-    // Process new image if provided
-    if (req.file) {
+    // Get existing product to preserve existing images
+    const existingProduct = await Product.findById(req.params.id);
+    if (!existingProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Process new images if provided
+    if (req.files && req.files.length > 0) {
       try {
-        const filename = generateFilename(req.file.originalname);
-        const outputPath = path.join('uploads', filename);
+        console.log(`Processing ${req.files.length} images for update...`);
         
-        console.log('Processing image for update...');
-        const success = await processImageBuffer(req.file.buffer, outputPath);
+        const newImageFilenames = [];
         
-        if (success) {
-          updateData.image = filename;
-          console.log('Image processed and saved for update:', filename);
-        } else {
-          console.error('Failed to process image for update');
-          return res.status(500).json({ message: 'Failed to process image' });
+        for (let i = 0; i < req.files.length; i++) {
+          const file = req.files[i];
+          const filename = generateFilename(file.originalname);
+          const outputPath = path.join('uploads', filename);
+          
+          const success = await processImageBuffer(file.buffer, outputPath);
+          
+          if (success) {
+            newImageFilenames.push(filename);
+            console.log(`Image ${i + 1} processed and saved for update:`, filename);
+          } else {
+            console.error(`Failed to process image ${i + 1} for update`);
+          }
+        }
+        
+        if (newImageFilenames.length > 0) {
+          // Combine existing images with new images
+          const existingImages = existingProduct.images || [];
+          const combinedImages = [...existingImages, ...newImageFilenames];
+          
+          updateData.images = combinedImages;
+          updateData.image = combinedImages[0]; // Set first image as main image
+          
+          console.log(`Updated images array with ${combinedImages.length} total images`);
         }
       } catch (error) {
         console.error('Image processing error for update:', error);

@@ -64,9 +64,11 @@ function App() {
       formData.append('discount', productData.discount);
       formData.append('description', productData.description);
       
-      if (productData.imageFile) {
-        formData.append('image', productData.imageFile);
-        console.log('Image file being sent:', productData.imageFile);
+      if (productData.imageFiles && productData.imageFiles.length > 0) {
+        productData.imageFiles.forEach((file, index) => {
+          formData.append('images', file);
+        });
+        console.log(`${productData.imageFiles.length} image files being sent`);
       }
       
       console.log('FormData contents:');
@@ -103,8 +105,11 @@ function App() {
       formData.append('discount', productData.discount);
       formData.append('description', productData.description);
       
-      if (productData.imageFile) {
-        formData.append('image', productData.imageFile);
+      if (productData.imageFiles && productData.imageFiles.length > 0) {
+        productData.imageFiles.forEach((file, index) => {
+          formData.append('images', file);
+        });
+        console.log(`${productData.imageFiles.length} image files being sent for update`);
       }
       
       const response = await axios.put(`${API_BASE_URL}/products/${editingProduct._id}`, formData, {
@@ -113,6 +118,7 @@ function App() {
         },
       });
       
+      console.log('Updated product response:', response.data);
       setProducts(products.map(p => p._id === editingProduct._id ? response.data : p));
       setShowForm(false);
       setEditingProduct(null);
@@ -185,10 +191,6 @@ function App() {
     <div className="App">
       <Navbar />
       <div className="container">
-        <header className="header">
-          <h1>Product Management System</h1>
-          <p>Manage your products with ease</p>
-        </header>
 
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
