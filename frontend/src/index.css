@@ -113,6 +113,15 @@ body {
   border-radius: 5px;
   font-size: 14px;
   transition: border-color 0.3s ease;
+  background-color: white;
+}
+
+.form-control select {
+  cursor: pointer;
+}
+
+.form-control option {
+  padding: 5px;
 }
 
 .form-control:focus {
@@ -142,6 +151,10 @@ body {
 .search-input {
   flex: 1;
   min-width: 200px;
+}
+
+.category-filter {
+  min-width: 150px;
 }
 
 .sort-select {

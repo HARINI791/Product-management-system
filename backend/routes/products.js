@@ -5,12 +5,17 @@ const router = express.Router();
 // GET /api/products - Get all products
 router.get('/', async (req, res) => {
   try {
-    const { search, sort } = req.query;
+    const { search, sort, category } = req.query;
     let query = {};
     
     // Search by name
     if (search) {
       query.name = { $regex: search, $options: 'i' };
+    }
+    
+    // Filter by category
+    if (category) {
+      query.category = category;
     }
     
     let products = Product.find(query);

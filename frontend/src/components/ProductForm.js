@@ -144,15 +144,30 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
 
           <div className="form-group">
             <label htmlFor="category">Category *</label>
-            <input
-              type="text"
+            <select
               id="category"
               name="category"
               className={`form-control ${errors.category ? 'error' : ''}`}
               value={formData.category}
               onChange={handleChange}
-              placeholder="Enter category"
-            />
+            >
+              <option value="">Select a category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Makeup">Makeup</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Books">Books</option>
+              <option value="Home & Garden">Home & Garden</option>
+              <option value="Sports & Outdoors">Sports & Outdoors</option>
+              <option value="Health & Beauty">Health & Beauty</option>
+              <option value="Toys & Games">Toys & Games</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Food & Beverages">Food & Beverages</option>
+              <option value="Office Supplies">Office Supplies</option>
+              <option value="Jewelry">Jewelry</option>
+              <option value="Shoes">Shoes</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Other">Other</option>
+            </select>
             {errors.category && <div className="error-message">{errors.category}</div>}
           </div>
 

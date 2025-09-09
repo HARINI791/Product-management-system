@@ -18,6 +18,7 @@ function App() {
   const [productToDelete, setProductToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -27,6 +28,7 @@ function App() {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (sortBy) params.append('sort', sortBy);
+      if (categoryFilter) params.append('category', categoryFilter);
       
       const response = await axios.get(`${API_BASE_URL}/products?${params}`);
       setProducts(response.data);
@@ -38,10 +40,10 @@ function App() {
     }
   };
 
-  // Load products on component mount and when search/sort changes
+  // Load products on component mount and when search/sort/category changes
   useEffect(() => {
     fetchProducts();
-  }, [searchTerm, sortBy]);
+  }, [searchTerm, sortBy, categoryFilter]);
 
   // Add new product
   const handleAddProduct = async (productData) => {
@@ -137,6 +139,30 @@ function App() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+          <div className="category-filter">
+            <select
+              className="form-control"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Makeup">Makeup</option>
+              <option value="Clothing">Clothing</option>
+              <option value="Books">Books</option>
+              <option value="Home & Garden">Home & Garden</option>
+              <option value="Sports & Outdoors">Sports & Outdoors</option>
+              <option value="Health & Beauty">Health & Beauty</option>
+              <option value="Toys & Games">Toys & Games</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Food & Beverages">Food & Beverages</option>
+              <option value="Office Supplies">Office Supplies</option>
+              <option value="Jewelry">Jewelry</option>
+              <option value="Shoes">Shoes</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
           <div className="sort-select">
             <select
