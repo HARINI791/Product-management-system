@@ -81,7 +81,7 @@ Create a `.env` file in the backend directory:
 ```
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/productmanagement
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production(you can write any string)
 ```
 
 Start the backend server:
